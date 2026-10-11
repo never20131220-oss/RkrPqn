@@ -5,7 +5,7 @@ on:
   push:
     branches: [ main ]
     paths:
-      - '*.zip'
+      - '성호HouseholdApp_AndroidX수정.zip'
       - '.github/workflows/build-apk.yml'
 
 jobs:
@@ -16,28 +16,41 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Java
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Gradle
+      - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.9'
 
       - name: Unzip Android project
         shell: bash
         run: |
-          ZIP_FILE="$(find . -maxdepth 1 -type f -name '*.zip' | head -n 1)"
-          test -n "$ZIP_FILE"
+          ZIP_FILE="성호HouseholdApp_AndroidX수정.zip"
+          test -f "$ZIP_FILE"
+
           rm -rf extracted
           mkdir extracted
           unzip -q "$ZIP_FILE" -d extracted
-          PROJECT_DIR="$(dirname "$(find extracted -type f -name settings.gradle.kts | head -n 1)")"
-          test -f "$PROJECT_DIR/settings.gradle.kts"
+
+          SETTINGS_FILE="$(find extracted -type f -name settings.gradle.kts | head -n 1)"
+          test -n "$SETTINGS_FILE"
+
+          PROJECT_DIR="$(dirname "$SETTINGS_FILE")"
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+
+          touch "$PROJECT_DIR/gradle.properties"
+
+          if grep -q '^android.useAndroidX=' "$PROJECT_DIR/gradle.properties"; then
+            sed -i 's/^android.useAndroidX=.*/android.useAndroidX=true/' "$PROJECT_DIR/gradle.properties"
+          else
+            echo 'android.useAndroidX=true' >> "$PROJECT_DIR/gradle.properties"
+          fi
+
+          echo "===== gradle.properties ====="
+          cat "$PROJECT_DIR/gradle.properties"
 
       - name: Build debug APK
         shell: bash
